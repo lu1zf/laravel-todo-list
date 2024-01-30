@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Todo;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TodoFactory extends Factory
 {
+    protected $model = Todo::class;
+
     /**
      * Define the model's default state.
      *
@@ -16,8 +19,14 @@ class TodoFactory extends Factory
      */
     public function definition(): array
     {
+        $dateTime = $this->faker->dateTimeBetween('now', '+1 month');
         return [
-            //
+            'name' => $this->faker->sentence(),
+            'description' => $this->faker->paragraph(),
+            'status' => $this->faker->randomElement([
+                'pending', 'in_progress', 'done'
+            ]),
+            'due_date' => $this->faker->randomElement([null, $dateTime])
         ];
     }
 }
