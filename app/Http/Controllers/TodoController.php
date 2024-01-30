@@ -29,12 +29,14 @@ class TodoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreTodoRequest $request)
+    public function store(StoreTodoRequest $request, Todo $todo)
     {
-        $created = Todo::create($request->all());
-        if ($created) return redirect('/');
+        if ($todo->create($request->all()))
+            return $this->successfulAction('To-Do created successfully');
 
-        return back()->withInput($request->all());
+        return back()
+            ->withInput($request->all())
+            ->withErrors('Could not create To-Do');
     }
 
     /**
@@ -50,12 +52,11 @@ class TodoController extends Controller
      */
     public function edit(int $id)
     {
-        $todo = Todo::find($id);
-        if ($todo) return view('create', [
+        if ($todo = Todo::find($id)) return view('create', [
             'todo' => $todo
         ]);
 
-        return redirect('/')->withErrors('Resource not found');
+        return $this->resourceNotFound();
     }
 
     /**
@@ -67,24 +68,22 @@ class TodoController extends Controller
         if (!$todo) return back()->withErrors('Resource not found');
 
         if ($todo->update($request->all())) {
-            session()->flash('status', 'Item successfuly updated!');
-            return  redirect('/');
+            return  $this->successfulAction('Item successfully updated!');
         }
     }
 
     public function markAsDone(int $id)
     {
         $todo = Todo::find($id);
-        if (!$todo) return redirect('/')->withErrors('Resource not found');
+        if (!$todo) return $this->resourceNotFound();
 
         $updated = $todo->update([
             'status' => 'done'
         ]);
 
-        if (!$updated) return redirect('/')->withErrors('Resource could not be updated');
+        if (!$updated) return $this->failedAction();
 
-        session()->flash('status', 'To-Do successfuly marked as done!');
-        return redirect('/');
+        return $this->successfulAction('To-Do successfully marked as done!');
     }
 
     /**
@@ -93,10 +92,29 @@ class TodoController extends Controller
     public function destroy(int $id)
     {
         $todo = Todo::find($id);
-        if (!$todo) return redirect('/')->withErrors('Resource not found');
-        if (!$todo->delete()) return redirect('/')->withErrors('Resource could not be deleted');
+        if (!$todo) return $this->resourceNotFound();
+        if (!$todo->delete()) return $this->failedAction();
+        return $this->successfulAction('To-Do successfully deleted!');
+    }
 
-        session()->flash('status', 'To-Do successfuly deleted!');
-        return redirect('/');
+    private function resourceNotFound()
+    {
+        return redirect()
+            ->route('index')
+            ->withErrors('Resource not found');
+    }
+
+    private function successfulAction(string $status = '')
+    {
+        return redirect()
+            ->route('index')
+            ->with('status', $status);
+    }
+
+    private function failedAction()
+    {
+        return redirect()
+            ->route('index')
+            ->withErrors('Could not execute the requested action');
     }
 }
